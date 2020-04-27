@@ -1,4 +1,3 @@
-
 var game = {
    
   groundWidth : 700,
@@ -15,6 +14,9 @@ var game = {
   scorePosPlayer2 : 365,
   scorePlayer1 : 0,
   scorePlayer2 : 0,
+
+  wallSound:null,
+  playerSound:null,
     
   ball : {
     width : 10,
@@ -26,69 +28,66 @@ var game = {
     directionX : 1,
     directionY : 1,
     speed :2,
+    border:360,
 
     move : function() {
       this.posX += this.directionX * this.speed ;
       this.posY += this.directionY * this.speed;
     },
    
-    bounce : function() {
-	if (game.ball.posX == game.playerOne.posX+1 || game.ball.posX == game.playerTwo.posX-1)
-	this.directionX = -this.directionX;
+    bounce : function(soundToPlay) {
+	     if (game.ball.posX == game.playerOne.posX+1 || game.ball.posX == game.playerTwo.posX-1)
+	       this.directionX = -this.directionX;
 
-      if (this.posX > game.groundWidth || this.posX < 0){
-        this.directionX = -this.directionX;
-        if ( this.posX < 0) {
-		game.playerTwo.scorePlayer2 = game.playerTwo.scorePlayer2+1;
-		game.ball.posX = game.playerOne.posX+2;
-	}			
-        if (this.posX > game.groundWidth) {
-	game.playerOne.scorePlayer1 = game.playerOne.scorePlayer1+1 ;
-	game.ball.posX = game.playerTwo.posX-2;
+        if (this.posX > game.groundWidth || this.posX < 0){
+         this.directionX = -this.directionX;
+          soundToPlay.play();
+          if ( this.posX < 0) {
+	        	game.playerTwo.scorePlayer2 = game.playerTwo.scorePlayer2+1;
+		        game.ball.posX = game.playerOne.posX+2;
+          }			
+          if (this.posX > game.groundWidth) {
+	           game.playerOne.scorePlayer1 = game.playerOne.scorePlayer1+1 ;
+	           game.ball.posX = game.playerTwo.posX-2;
+          }
+        }
+
+        if (this.posY > game.groundHeight || this.posY < 0){
+          this.directionY = -this.directionY;
+          soundToPlay.play();
+        }
+
+        if (game.ball.posX == game.playerOne.posX + 10 && game.ball.posY > game.playerOne.posY-10 && game.ball.posY < game.playerOne.posY + 50) {
+          this.directionX = -this.directionX; 
+        }
+
+        if (game.ball.posX == game.playerTwo.posX - 10 && game.ball.posY > game.playerTwo.posY -20 && game.ball.posY < game.playerTwo.posY + 50)
+          this.directionX = -this.directionX;
       }
-}
-
-      if (this.posY > game.groundHeight || this.posY < 0){
-        this.directionY = -this.directionY;
-
-      }
-
-
-      if (game.ball.posX == game.playerOne.posX + 10 && game.ball.posY > game.playerOne.posY-10 && game.ball.posY < game.playerOne.posY + 50) {
-        this.directionX = -this.directionX;
-
-        //this.directionY = -this.directionY;
-      }
-      if (game.ball.posX == game.playerTwo.posX - 10 && game.ball.posY > game.playerTwo.posY -20 && game.ball.posY < game.playerTwo.posY + 50)
-        this.directionX = -this.directionX;
-
-    }
-
-
-  },
+    },
     
   playerOne : {
     width : 10,
     height : 50,
-    color : "#FFFFFF",
+    color : "blue",
     posX : 30,
     posY : 200,
     scorePlayer1:0,
-  goUp : false,
-  goDown : false,
-  originalPosition : "left"
+    goUp : false,
+    goDown : false,
+    originalPosition : "left"
   },
     
   playerTwo : {
     width : 10,
     height : 50,
-    color : "#FFFFFF",
+    color : "blue",
     posX : 650,
     posY : 200,
     scorePlayer2:0,
-  goUp : false,
-  goDown : false,
-  originalPosition : "right"
+    goUp : false,
+    goDown : false,
+    originalPosition : "right"
   },
     
   init : function() {
@@ -104,10 +103,14 @@ var game = {
     this.displayScore( game.playerOne.scorePlayer1, game.playerTwo.scorePlayer2);
     this.displayBall(200,200);
     this.displayPlayers();
-   
-    this.initKeyboard(game.control.onKeyDown, game.control.onKeyUp);
+    this.initMouse(this.control.onMouseMove);
+    this.initKeyboard(this.control.onKeyDown, this.control.onKeyUp);
     game.ai.setPlayerAndBall(this.playerTwo, this.ball);
+
+    this.wallSound = new Audio('./sound/wall.ogg');
+    this.playerSound = new Audio('./sound/player.ogg');
   },
+
   displayScore : function(scorePlayer1, scorePlayer2) {
     game.display.drawRectangleInLayer(this.scoreLayer,45,50, "#000000",this.scorePosPlayer1, 10);
     game.display.drawRectangleInLayer(this.scoreLayer,45, 50,"#000000",this.scorePosPlayer2, 10);
@@ -119,30 +122,41 @@ var game = {
   displayBall : function() {
     game.display.drawRectangleInLayer(this.playersBallLayer, this.ball.width, this.ball.height, this.ball.color, this.ball.posX, this.ball.posY);
   },
+
   moveBall : function() { 
     this.ball.move();
-  this.ball.bounce();
+    this.ball.bounce(this.wallSound);
     this.displayBall();
   }, 
-   hasWon : function() {
-	if (game.playerOne.scorePlayer1 == 5) {
-		document.write("LE JOUEUR 1 A GAGNER !!");
-		return true; }
-	if (game.playerTwo.scorePlayer2 == 5) {
-		document.write("LE JOUEUR 2 A GAGNER !!");
-		return true;
-	}
-	return false;
-},
+
+  hasWon : function() {
+    if (game.playerOne.scorePlayer1 == 10) {
+		  document.write("LE JOUEUR REMPORTE LA PARTIE !!");
+		  return true; 
+    }
+    if (game.playerTwo.scorePlayer2 == 10) {
+		  document.write("LE JOUEUR 2 REMPORTE LA PARTIE");
+		  return true;
+    }
+	 return false;
+  },
+
   movePlayers : function() {
-    if (game.playerOne.goUp && game.playerOne.posY > 0)
-      game.playerOne.posY-=5;
-    if (game.playerOne.goDown && game.playerOne.posY < game.groundHeight - game.playerOne.height)
-      game.playerOne.posY+=5;
-    if (game.playerTwo.goUp && game.playerTwo.posY > 0)
-      game.playerTwo.posY-=5;
-    if (game.playerTwo.goDown && game.playerTwo.posY < game.groundHeight - game.playerTwo.height)
-      game.playerTwo.posY+=5;
+    
+    if ( game.control.controlSystem == "KEYBOARD" ) {
+            // keyboard control
+            if ( game.playerOne.goUp ) {
+                game.playerOne.posY-=5;
+            } else if ( game.playerOne.goDown ) {
+                game.playerOne.posY+=5;
+            }
+        } else if ( game.control.controlSystem == "MOUSE" ) {
+            // mouse control
+            if (game.playerOne.goUp && game.playerOne.posY > game.control.mousePointer)
+                game.playerOne.posY-=5;
+            else if (game.playerOne.goDown && game.playerOne.posY < game.control.mousePointer)
+                game.playerOne.posY+=5;
+        }
   },
    
   displayPlayers : function() {
@@ -152,12 +166,16 @@ var game = {
   },
  
   clearLayer : function(targetLayer) {
-  targetLayer.clear();
+    targetLayer.clear();
   },
    
   initKeyboard : function(onKeyDownFunction, onKeyUpFunction) {
     window.onkeydown = onKeyDownFunction;
     window.onkeyup = onKeyUpFunction;
-  }
+  },
+
+  initMouse : function(onMouseMoveFunction) {
+      window.onmousemove = onMouseMoveFunction;
+  },
    
 };
